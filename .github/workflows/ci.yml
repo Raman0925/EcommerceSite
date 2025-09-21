@@ -1,0 +1,45 @@
+name: CI and CD
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4   
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+           node-version: '22.9.0'
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Node.js dependencies
+        run: npm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: npm run lint
+
+    #   - name: Run Unit Tests with Coverage
+    #     run: npm run test-coverage
+
+    #   - name: Upload coverage report
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: coverage-report
+    #       path: coverage/
