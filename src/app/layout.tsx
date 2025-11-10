@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description: 'A modern store built with Next.js',
 };
 
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,8 +23,7 @@ export default function RootLayout({
     <html lang='en' suppressHydrationWarning>
       <body className={`${inter.className}`}>
         <ThemeProvider attribute='class' defaultTheme='light' enableSystem disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
+          <AuthProvider>{children}</AuthProvider></ThemeProvider>
       </body>
     </html>
   );
