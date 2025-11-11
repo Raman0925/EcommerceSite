@@ -48,7 +48,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (!user) return token;
+      if (!user) {
+        return token;
+      }
       const u = user as Partial<{ id: string; role: string }>;
       const nextToken = {
         ...token,
@@ -58,7 +60,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return nextToken;
     },
     async session({ session, token }) {
-      if (!session.user) return session;
+      if (!session.user) {
+        return session;
+      }
       const nextSession = {
         ...session,
         user: {
