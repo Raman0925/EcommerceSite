@@ -48,21 +48,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        const u = user as Partial<{ id: string; role: string }>;
-        token.userId = u.id ?? token.userId;
-        token.role = u.role ?? token.role ?? "user";
-      }
-      return token;
+      if (!user) return token;
+      const u = user as Partial<{ id: string; role: string }>;
+      const nextToken = {
+        ...token,
+        userId: u.id ?? token.userId,
+        role: u.role ?? token.role ?? "user",
+      };
+      return nextToken;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id =
-          (token.userId as string | undefined) ?? session.user.id;
-        session.user.role =
-          (token.role as string | undefined) ?? session.user.role ?? "user";
-      }
-      return session;
+      if (!session.user) return session;
+      const nextSession = {
+        ...session,
+        user: {
+          ...session.user,
+          id: (token.userId as string | undefined) ?? session.user.id,
+          role:
+            (token.role as string | undefined) ?? session.user.role ?? "user",
+        },
+      };
+      return nextSession;
     },
   },
 });
