@@ -42,22 +42,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name ?? undefined,
           image: user.image ?? undefined,
           role: user.role ?? "user",
-        } as any;
+        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.userId = (user as any).id;
-        token.role = (user as any).role ?? "user";
+        const u = user as Partial<{ id: string; role: string }>;
+        token.userId = u.id ?? token.userId;
+        token.role = u.role ?? token.role ?? "user";
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.userId as string | undefined;
-        (session.user as any).role = token.role as string | undefined;
+        session.user.id =
+          (token.userId as string | undefined) ?? session.user.id;
+        session.user.role =
+          (token.role as string | undefined) ?? session.user.role ?? "user";
       }
       return session;
     },

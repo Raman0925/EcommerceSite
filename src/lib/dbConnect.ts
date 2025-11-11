@@ -1,10 +1,7 @@
 import mongoose from "mongoose";
 
 declare global {
-  // eslint-disable-next-line no-var
-  var __mongooseConnection:
-    | { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null }
-    | undefined;
+  var __mongoose: typeof mongoose | null | undefined;
 }
 
 const mongoUri = process.env.MONGODB_URI;
@@ -15,29 +12,20 @@ if (!mongoUri) {
 
 const MONGODB_URI: string = mongoUri as string;
 
-let cached = global.__mongooseConnection;
-
-if (!cached) {
-  cached = global.__mongooseConnection = { conn: null, promise: null };
-}
+let connection = global.__mongoose ?? null;
 
 async function dbConnect(): Promise<typeof mongoose> {
-  if (cached?.conn) {
-    return cached.conn;
+  if (connection && connection.connection.readyState === 1) {
+    return connection;
   }
 
-  if (!cached?.promise) {
-    const options: Parameters<typeof mongoose.connect>[1] = {};
-    if (process.env.MONGODB_DB) {
-      (options as any).dbName = process.env.MONGODB_DB as string;
-    }
-    cached!.promise = mongoose
-      .connect(MONGODB_URI, options)
-      .then((mongooseInstance) => mongooseInstance);
-  }
+  const options: Parameters<typeof mongoose.connect>[1] = process.env.MONGODB_DB
+    ? { dbName: process.env.MONGODB_DB }
+    : undefined;
 
-  cached!.conn = await cached!.promise;
-  return cached!.conn;
+  connection = await mongoose.connect(MONGODB_URI, options);
+  global.__mongoose = connection;
+  return connection;
 }
 
 export default dbConnect;
