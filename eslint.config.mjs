@@ -73,6 +73,7 @@ const eslintConfig = [
     rules: {
       "no-undef": "off",
       "no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 
