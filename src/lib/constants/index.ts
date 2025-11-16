@@ -6,3 +6,16 @@ export const APP_URL =
 
 export const LATEST_PRODUCTS_LIMIT =
   Number(process.env.LATEST_PRODUCTS_LIMIT) || 4;
+
+// Default values for sign-in form (for development/testing)
+export const signInDefaultValues = {
+  email: "admin@example.com",
+  password: "123456",
+};
+
+export const signUpDefaultValues = {
+  name: "Steve Smith",
+  email: "steve@example.com",
+  password: "password",
+  confirmPassword: "password",
+};

@@ -1,78 +1,108 @@
+import { compareSync } from "bcrypt-ts-edge";
+import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import dbConnect from "@/lib/dbConnect";
-import UserModel from "@/model/User";
+import CredentialsProvider from "next-auth/providers/credentials";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  trustHost: true,
-  secret: process.env.AUTH_SECRET,
+import { prisma } from "@/db/prisma";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+
+export const config = {
+  pages: {
+    signIn: "/sign-in",
+    error: "/sign-in",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
+  },
+  adapter: PrismaAdapter(prisma),
   providers: [
-    Credentials({
-      id: "credentials",
-      name: "Credentials",
+    CredentialsProvider({
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: {
+          type: "email",
+        },
+        password: { type: "password" },
       },
-      authorize: async (credentials) => {
-        const creds = credentials as { email?: string; password?: string };
-        if (!creds?.email || !creds?.password) {
+      async authorize(credentials) {
+        if (credentials == null) {
           return null;
         }
 
-        await dbConnect();
-
-        const user = await UserModel.findOne({
-          email: creds.email,
-        }).select("+password");
-        if (!user) {
-          return null;
+        // Find user in database
+        const user = await prisma.user.findFirst({
+          where: {
+            email: credentials.email as string,
+          },
+        });
+        // Check if user exists and password is correct
+        if (user && user.password) {
+          const isMatch = compareSync(
+            credentials.password as string,
+            user.password
+          );
+          // If password is correct, return user object
+          if (isMatch) {
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+            };
+          }
         }
-
-        const isValid = await bcrypt.compare(creds.password, user.password);
-        if (!isValid) {
-          return null;
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name ?? undefined,
-          image: user.image ?? undefined,
-          role: user.role ?? "user",
-        };
+        // If user doesn't exist or password is incorrect, return null
+        return null;
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (!user) {
-        return token;
+    async jwt({ token, user, trigger, session }: any) {
+      // Assign user fields to token
+      if (user) {
+        // eslint-disable-next-line no-param-reassign
+        token.role = user.role;
+
+        // If user has no name, use email as their default name
+        if (user.name === "NO_NAME") {
+          // eslint-disable-next-line no-param-reassign
+          token.name = user.email!.split("@")[0];
+
+          // Update the user in the database with the new name
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { name: token.name },
+          });
+        }
       }
-      const u = user as Partial<{ id: string; role: string }>;
-      const nextToken = {
-        ...token,
-        userId: u.id ?? token.userId,
-        role: u.role ?? token.role ?? "user",
-      };
-      return nextToken;
+
+      // Handle session updates (e.g., name change)
+      if (session?.user.name && trigger === "update") {
+        // eslint-disable-next-line no-param-reassign
+        token.name = session.user.name;
+      }
+
+      return token;
     },
-    async session({ session, token }) {
-      if (!session.user) {
-        return session;
+    async session({ session, token, trigger }: any) {
+      // Map the token data to the session object
+      // eslint-disable-next-line no-param-reassign
+      session.user.id = token.sub;
+      // eslint-disable-next-line no-param-reassign
+      session.user.name = token.name;
+      // eslint-disable-next-line no-param-reassign
+      session.user.role = token.role;
+
+      // Optionally handle session updates (like name change)
+      if (trigger === "update" && token.name) {
+        // eslint-disable-next-line no-param-reassign
+        session.user.name = token.name;
       }
-      const nextSession = {
-        ...session,
-        user: {
-          ...session.user,
-          id: (token.userId as string | undefined) ?? session.user.id,
-          role:
-            (token.role as string | undefined) ?? session.user.role ?? "user",
-        },
-      };
-      return nextSession;
+
+      // Return the updated session object
+      return session;
     },
   },
-});
+} satisfies NextAuthConfig;
+
+export const { handlers, auth, signIn, signOut } = NextAuth(config);
