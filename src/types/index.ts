@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { insertProductSchema } from "@/lib/validator";
+import {
+  cartItemSchema,
+  insertCartSchema,
+  insertProductSchema,
+} from "@/lib/validator";
 
 // Product type for displaying products (from database)
 export type Product = Omit<z.infer<typeof insertProductSchema>, "price"> & {
@@ -9,3 +13,6 @@ export type Product = Omit<z.infer<typeof insertProductSchema>, "price"> & {
   rating: string;
   numReviews: number;
 };
+
+export type Cart = z.infer<typeof insertCartSchema>;
+export type CartItem = z.infer<typeof cartItemSchema>;
