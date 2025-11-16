@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import '@/assets/styles/globals.css';
-import { ThemeProvider } from 'next-themes';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "next-themes";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Prostore',
-  description: 'A modern store built with Next.js',
+  title: "Prostore",
+  description: "A modern store built with Next.js",
 };
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -20,10 +20,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en' suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className}`}>
-        <ThemeProvider attribute='class' defaultTheme='light' enableSystem disableTransitionOnChange>
-          <AuthProvider>{children}</AuthProvider></ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
