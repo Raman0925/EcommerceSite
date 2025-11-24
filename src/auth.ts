@@ -75,7 +75,9 @@ export const config = {
       const { pathname } = request.nextUrl;
 
       // Check if user is not authenticated and on a protected path
-      if (!auth && protectedPaths.some((p) => p.test(pathname))) return false;
+      if (!auth && protectedPaths.some((p) => p.test(pathname))) {
+        return false;
+      }
 
       // Check for cart cookie
       if (!request.cookies.get("sessionCartId")) {

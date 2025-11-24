@@ -92,7 +92,9 @@ export async function getUserById(userId: string) {
     where: { id: userId },
   });
 
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    throw new Error("User not found");
+  }
   return user;
 }
 
@@ -101,11 +103,19 @@ export async function updateUserAddress(data: ShippingAddress) {
   try {
     const session = await auth();
 
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      throw new Error("User not found");
+    }
+
     const currentUser = await prisma.user.findFirst({
-      where: { id: session?.user?.id! },
+      where: { id: userId },
     });
 
-    if (!currentUser) throw new Error("User not found");
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
 
     const address = shippingAddressSchema.parse(data);
 
