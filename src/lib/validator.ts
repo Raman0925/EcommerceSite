@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { formatNumberWithDecimal } from "./utils";
 
-// Make sure price is formatted with two decimal places
 const currency = z
   .string()
   .refine(
@@ -9,7 +8,6 @@ const currency = z
     "Price must have exactly two decimal places (e.g., 49.99)"
   );
 
-// Schema for inserting a product
 export const insertProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   slug: z.string().min(3, "Slug must be at least 3 characters"),
@@ -70,4 +68,15 @@ export const insertCartSchema = z.object({
   taxPrice: currency,
   sessionCartId: z.string().min(1, "Session cart id is required"),
   userId: z.string().optional().nullable(),
+});
+
+// Shipping address
+export const shippingAddressSchema = z.object({
+  fullName: z.string().min(3, "Name must be at least 3 characters"),
+  streetAddress: z.string().min(3, "Address must be at least 3 characters"),
+  city: z.string().min(3, "city must be at least 3 characters"),
+  postalCode: z.string().min(3, "Postal code must be at least 3 characters"),
+  country: z.string().min(3, "Country must be at least 3 characters"),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
 });
