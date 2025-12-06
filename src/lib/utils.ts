@@ -55,11 +55,13 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
 export function formatCurrency(amount: number | string | null) {
   if (typeof amount === "number") {
     return CURRENCY_FORMATTER.format(amount);
-  } else if (typeof amount === "string") {
-    return CURRENCY_FORMATTER.format(Number(amount));
-  } else {
-    return "NaN";
   }
+
+  if (typeof amount === "string") {
+    return CURRENCY_FORMATTER.format(Number(amount));
+  }
+
+  return "NaN";
 }
 
 export function formatId(id: string) {
@@ -104,6 +106,12 @@ export const formatDateTime = (dateString: Date) => {
     timeOnly: formattedTime,
   };
 };
+
+const NUMBER_FORMATTER = new Intl.NumberFormat("en-US");
+
+export function formatNumber(number: number) {
+  return NUMBER_FORMATTER.format(number);
+}
 
 export function formUrlQuery({
   params,
