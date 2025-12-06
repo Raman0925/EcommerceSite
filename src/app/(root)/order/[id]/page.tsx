@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { auth } from "@/auth";
 import { getOrderById } from "@/lib/actions/order.actions";
 import { ShippingAddress } from "@/types";
 import OrderDetailsTable from "./order-details-table";
@@ -22,12 +23,15 @@ const OrderDetailsPage = async (props: {
     notFound();
   }
 
+  const session = await auth();
+
   return (
     <OrderDetailsTable
       order={{
         ...order,
         shippingAddress: order.shippingAddress as ShippingAddress,
       }}
+      isAdmin={session?.user.role === "admin" || false}
     />
   );
 };
