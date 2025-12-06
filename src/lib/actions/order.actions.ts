@@ -10,6 +10,7 @@ import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
 import { insertOrderSchema } from "@/lib/validator";
 import { CartItem } from "@/types";
+import { revalidatePath } from "next/cache";
 
 const prismaAny = prisma as any;
 
@@ -142,4 +143,166 @@ export async function getMyOrders({
     data,
     totalPages: Math.ceil(dataCount / limit),
   };
+}
+
+type SalesDataType = {
+  month: string;
+  totalSales: number;
+}[];
+
+export async function getOrderSummary() {
+  const ordersCount = await prismaAny.order.count();
+  const productsCount = await prismaAny.product.count();
+  const usersCount = await prismaAny.user.count();
+
+  const totalSales = await prismaAny.order.aggregate({
+    _sum: { totalPrice: true },
+  });
+
+  const salesDataRaw = await prismaAny.$queryRaw<
+    Array<{ month: string; totalSales: any }>
+  >`SELECT to_char("createdAt", 'MM/YY') as "month", sum("totalPrice") as "totalSales" FROM "Order" GROUP BY to_char("createdAt", 'MM/YY')`;
+
+  const salesData: SalesDataType = salesDataRaw.map(
+    (entry: { month: string; totalSales: any }) => ({
+      month: entry.month,
+      totalSales: Number(entry.totalSales),
+    })
+  );
+
+  const latestOrders = await prismaAny.order.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: { select: { name: true } },
+    },
+    take: 6,
+  });
+
+  return {
+    ordersCount,
+    productsCount,
+    usersCount,
+    totalSales,
+    latestOrders,
+    salesData,
+  };
+}
+
+export async function getAllOrders({
+  limit = PAGE_SIZE,
+  page,
+  query,
+}: {
+  query: string;
+  limit?: number;
+  page: number;
+}) {
+  const queryFilter: any =
+    query && query !== "all"
+      ? {
+          user: {
+            name: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+        }
+      : {};
+
+  const data = await prismaAny.order.findMany({
+    where: {
+      ...queryFilter,
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: (page - 1) * limit,
+    include: {
+      user: {
+        select: { name: true },
+      },
+    },
+  });
+
+  const dataCount = await prismaAny.order.count({
+    where: {
+      ...queryFilter,
+    },
+  });
+
+  return {
+    data,
+    totalPages: Math.ceil(dataCount / limit),
+  };
+}
+
+export async function deleteOrder(id: string) {
+  try {
+    await prismaAny.order.delete({ where: { id } });
+
+    revalidatePath("/admin/orders");
+
+    return {
+      success: true,
+      message: "Order deleted successfully",
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+export async function updateOrderToPaidByCOD(orderId: string) {
+  try {
+    const order = await prismaAny.order.findFirst({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    await prismaAny.order.update({
+      where: { id: orderId },
+      data: {
+        isPaid: true,
+        paidAt: new Date(),
+      },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+
+    return { success: true, message: "Order paid successfully" };
+  } catch (err) {
+    return { success: false, message: formatError(err) };
+  }
+}
+
+export async function deliverOrder(orderId: string) {
+  try {
+    const order = await prismaAny.order.findFirst({
+      where: {
+        id: orderId,
+      },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+    if (!order.isPaid) {
+      throw new Error("Order is not paid");
+    }
+
+    await prismaAny.order.update({
+      where: { id: orderId },
+      data: {
+        isDelivered: true,
+        deliveredAt: new Date(),
+      },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+
+    return { success: true, message: "Order delivered successfully" };
+  } catch (err) {
+    return { success: false, message: formatError(err) };
+  }
 }
