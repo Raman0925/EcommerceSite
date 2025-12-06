@@ -8,6 +8,8 @@ import { prisma } from "@/db/prisma";
 import { formatError } from "@/lib/utils";
 import { insertReviewSchema } from "@/lib/validator";
 
+const prismaAny = prisma as any;
+
 // Create & Update Review
 export async function createUpdateReview(
   data: z.infer<typeof insertReviewSchema>
@@ -25,7 +27,7 @@ export async function createUpdateReview(
     });
 
     // Get the product being reviewed
-    const product = await prisma.product.findFirst({
+    const product = await prismaAny.product.findFirst({
       where: { id: review.productId },
     });
 
@@ -34,7 +36,7 @@ export async function createUpdateReview(
     }
 
     // Check if user has already reviewed this product
-    const reviewExists = await prisma.review.findFirst({
+    const reviewExists = await prismaAny.review.findFirst({
       where: {
         productId: review.productId,
         userId: review.userId,
@@ -42,7 +44,7 @@ export async function createUpdateReview(
     });
 
     // If review exists, update it, otherwise create a new one
-    await prisma.$transaction(async (tx) => {
+    await prismaAny.$transaction(async (tx: any) => {
       if (reviewExists) {
         // Update the review
         await tx.review.update({
@@ -95,7 +97,7 @@ export async function createUpdateReview(
 
 // Get all reviews for a product
 export async function getReviews({ productId }: { productId: string }) {
-  const data = await prisma.review.findMany({
+  const data = await prismaAny.review.findMany({
     where: {
       productId,
     },
@@ -125,7 +127,7 @@ export const getReviewByProductId = async ({
     throw new Error("User is not authenticated");
   }
 
-  return prisma.review.findFirst({
+  return prismaAny.review.findFirst({
     where: { productId, userId: session.user.id },
   });
 };
