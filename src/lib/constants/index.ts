@@ -36,3 +36,22 @@ export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
 
 export const DEFAULT_PAYMENT_METHOD =
   process.env.DEFAULT_PAYMENT_METHOD || "PayPal";
+
+export const productDefaultValues = {
+  name: "",
+  slug: "",
+  category: "",
+  images: [] as string[],
+  brand: "",
+  description: "",
+  price: "0",
+  stock: 0,
+  rating: "0",
+  numReviews: "0",
+  isFeatured: false,
+  banner: null as string | null,
+};
+
+export const USER_ROLES = process.env.USER_ROLES
+  ? process.env.USER_ROLES.split(", ")
+  : ["admin", "user"];
