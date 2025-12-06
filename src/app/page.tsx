@@ -5,6 +5,8 @@ import {
 } from "@/lib/actions/product.actions";
 import ProductCarousel from "@/components/shared/product/product-carousel";
 import ViewAllProductsButton from "@/components/view-all-products-button";
+import IconBoxes from "@/components/icon-boxes";
+import DealCountdown from "@/components/deal-countdown";
 
 export default async function Home() {
   const latestProducts = await getLatestProducts();
@@ -15,6 +17,8 @@ export default async function Home() {
       {featuredProducts.length > 0 && (
         <ProductCarousel data={featuredProducts} />
       )}
+      <IconBoxes />
+      <DealCountdown />
       <ProductList title="Newest Arrivals" data={latestProducts} />
       <ViewAllProductsButton />
     </div>
