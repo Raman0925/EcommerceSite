@@ -21,14 +21,17 @@ import {
   deliverOrder,
   updateOrderToPaidByCOD,
 } from "@/lib/actions/order.actions";
-import { Order } from "@/types";
+import type { Order } from "@/types";
+import StripePayment from "./stripe-payment";
 
 const OrderDetailsTable = ({
   order,
   isAdmin,
+  stripeClientSecret,
 }: {
-  order: Order;
+  order: Omit<Order, "paymentResult">;
   isAdmin: boolean;
+  stripeClientSecret?: string | null;
 }) => {
   const { toast } = useToast();
 
@@ -56,7 +59,7 @@ const OrderDetailsTable = ({
       <div className="grid md:grid-cols-3 md:gap-5">
         <div className="overflow-x-auto md:col-span-2 space-y-4">
           <Card>
-            <CardContent className="p-4 gap-4">
+            <CardContent className="p-4 gap-4 space-y-4">
               <h2 className="text-xl pb-4">Payment Method</h2>
               <p>{paymentMethod}</p>
               {isPaid ? (
@@ -65,6 +68,16 @@ const OrderDetailsTable = ({
                 </Badge>
               ) : (
                 <Badge variant="destructive">Not paid</Badge>
+              )}
+
+              {!isPaid && paymentMethod === "Stripe" && stripeClientSecret && (
+                <div className="mt-4">
+                  <StripePayment
+                    priceInCents={Number(totalPrice) * 100}
+                    orderId={order.id}
+                    clientSecret={stripeClientSecret}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>

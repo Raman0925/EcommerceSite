@@ -4,6 +4,9 @@ export const APP_DESCRIPTION =
 export const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+// Server URL (used for Stripe success redirect, etc.)
+export const SERVER_URL = process.env.SERVER_URL || APP_URL;
+
 export const LATEST_PRODUCTS_LIMIT =
   Number(process.env.LATEST_PRODUCTS_LIMIT) || 4;
 
@@ -63,3 +66,5 @@ export const reviewFormDefaultValues = {
   productId: "",
   userId: "",
 };
+
+export const SENDER_EMAIL = process.env.SENDER_EMAIL || "onboarding@resend.dev";

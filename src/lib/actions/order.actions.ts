@@ -9,8 +9,9 @@ import { formatError, convertToPlainObject } from "@/lib/utils";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
 import { insertOrderSchema } from "@/lib/validator";
-import { CartItem } from "@/types";
+import type { CartItem, PaymentResult, ShippingAddress, Order } from "@/types";
 import { revalidatePath } from "next/cache";
+import { sendPurchaseReceipt } from "@/../email";
 
 const prismaAny = prisma as any;
 
@@ -302,6 +303,63 @@ export async function deliverOrder(orderId: string) {
     revalidatePath(`/order/${orderId}`);
 
     return { success: true, message: "Order delivered successfully" };
+  } catch (err) {
+    return { success: false, message: formatError(err) };
+  }
+}
+
+export async function updateOrderToPaid({
+  orderId,
+  paymentResult,
+}: {
+  orderId: string;
+  paymentResult: PaymentResult;
+}) {
+  try {
+    const order = await prismaAny.order.findFirst({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    await prismaAny.order.update({
+      where: { id: orderId },
+      data: {
+        isPaid: true,
+        paidAt: new Date(),
+        paymentResult,
+      },
+    });
+
+    // Get the updated order after the transaction
+    const updatedOrder = await prismaAny.order.findFirst({
+      where: {
+        id: orderId,
+      },
+      include: {
+        orderItems: true,
+        user: { select: { name: true, email: true } },
+      },
+    });
+
+    if (!updatedOrder) {
+      throw new Error("Order not found");
+    }
+
+    // Send the purchase receipt email with the updated order
+    await sendPurchaseReceipt({
+      order: {
+        ...(updatedOrder as Order),
+        shippingAddress: updatedOrder.shippingAddress as ShippingAddress,
+        paymentResult: updatedOrder.paymentResult as PaymentResult,
+      },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+
+    return { success: true, message: "Order paid successfully" };
   } catch (err) {
     return { success: false, message: formatError(err) };
   }
