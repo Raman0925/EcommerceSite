@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,12 +14,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
+import {
+  deliverOrder,
+  updateOrderToPaidByCOD,
+} from "@/lib/actions/order.actions";
 import { Order } from "@/types";
 
-const OrderDetailsTable = ({ order }: { order: Order }) => {
+const OrderDetailsTable = ({
+  order,
+  isAdmin,
+}: {
+  order: Order;
+  isAdmin: boolean;
+}) => {
   const { toast } = useToast();
+
+  const [isMarkPaidPending, startMarkPaidTransition] = useTransition();
+  const [isMarkDeliveredPending, startMarkDeliveredTransition] =
+    useTransition();
 
   const {
     shippingAddress,
@@ -132,6 +148,42 @@ const OrderDetailsTable = ({ order }: { order: Order }) => {
                 <div>Total</div>
                 <div>{formatCurrency(totalPrice)}</div>
               </div>
+              {isAdmin && !isPaid && paymentMethod === "CashOnDelivery" && (
+                <Button
+                  type="button"
+                  disabled={isMarkPaidPending}
+                  onClick={() =>
+                    startMarkPaidTransition(async () => {
+                      const res = await updateOrderToPaidByCOD(order.id);
+                      toast({
+                        variant: res.success ? "default" : "destructive",
+                        description: res.message,
+                      });
+                    })
+                  }
+                >
+                  {isMarkPaidPending ? "Processing..." : "Mark As Paid"}
+                </Button>
+              )}
+              {isAdmin && isPaid && !isDelivered && (
+                <Button
+                  type="button"
+                  disabled={isMarkDeliveredPending}
+                  onClick={() =>
+                    startMarkDeliveredTransition(async () => {
+                      const res = await deliverOrder(order.id);
+                      toast({
+                        variant: res.success ? "default" : "destructive",
+                        description: res.message,
+                      });
+                    })
+                  }
+                >
+                  {isMarkDeliveredPending
+                    ? "Processing..."
+                    : "Mark As Delivered"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
