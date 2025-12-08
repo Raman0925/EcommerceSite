@@ -11,12 +11,17 @@ import { insertProductSchema, updateProductSchema } from "@/lib/validator";
 import { Product } from "@/types";
 
 export async function getLatestProducts(): Promise<Product[]> {
-  const data = await prisma.product.findMany({
-    take: LATEST_PRODUCTS_LIMIT,
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    const data = await prisma.product.findMany({
+      take: LATEST_PRODUCTS_LIMIT,
+      orderBy: { createdAt: "desc" },
+    });
 
-  return convertToPlainObject(data) as unknown as Product[];
+    return convertToPlainObject(data) as unknown as Product[];
+  } catch (error) {
+    console.warn("Failed to load latest products", error);
+    return [];
+  }
 }
 
 export const getProductById = async (id: string) => {
@@ -32,23 +37,33 @@ export async function getProductBySlug(slug: string) {
 
 // Get featured products
 export async function getFeaturedProducts(): Promise<Product[]> {
-  const data = await prisma.product.findMany({
-    where: { isFeatured: true },
-    orderBy: { createdAt: "desc" },
-    take: 4,
-  });
+  try {
+    const data = await prisma.product.findMany({
+      where: { isFeatured: true },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    });
 
-  return convertToPlainObject(data) as unknown as Product[];
+    return convertToPlainObject(data) as unknown as Product[];
+  } catch (error) {
+    console.warn("Failed to load featured products", error);
+    return [];
+  }
 }
 
 // Get product categories
 export async function getAllCategories() {
-  const data = await prisma.product.groupBy({
-    by: ["category"],
-    _count: true,
-  });
+  try {
+    const data = await prisma.product.groupBy({
+      by: ["category"],
+      _count: true,
+    });
 
-  return data;
+    return data;
+  } catch (error) {
+    console.warn("Failed to load product categories", error);
+    return [];
+  }
 }
 
 export async function getAllProducts({
@@ -109,10 +124,10 @@ export async function getAllProducts({
       sort === "lowest"
         ? { price: "asc" }
         : sort === "highest"
-        ? { price: "desc" }
-        : sort === "rating"
-        ? { rating: "desc" }
-        : { createdAt: "desc" },
+          ? { price: "desc" }
+          : sort === "rating"
+            ? { rating: "desc" }
+            : { createdAt: "desc" },
     skip: (page - 1) * limit,
     take: limit,
   });
