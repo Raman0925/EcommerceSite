@@ -6,8 +6,6 @@ import Stripe from "stripe";
 import { getOrderById } from "@/lib/actions/order.actions";
 import { Button } from "@/components/ui/button";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-
 export const metadata: Metadata = {
   title: "Stripe Payment Success",
 };
@@ -25,6 +23,14 @@ const SuccessPage = async (props: {
   if (!order) {
     notFound();
   }
+
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    console.warn("STRIPE_SECRET_KEY is not set; skipping Stripe verification.");
+    return redirect(`/order/${id}`);
+  }
+
+  const stripe = new Stripe(secretKey);
 
   // Retrieve the payment intent
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
